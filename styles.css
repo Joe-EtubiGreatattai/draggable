@@ -14,30 +14,6 @@ body {
     text-align: center;
 }
 
-/* Add these styles to your existing CSS */
-.delete-button {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 20px;
-    height: 20px;
-    background-color: #ff4444;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.delete-button:hover {
-    background-color: #cc0000;
-}
-
 .upload-container {
     margin: 10px 0;
 }
@@ -56,15 +32,13 @@ body {
     background-color: #0056b3;
 }
 
-#upload,
-#multipleUpload {
+#upload {
     display: none;
 }
 
 .boxes-container {
     display: flex;
-    justify-content: space-around;
-    gap: 20px;
+    justify-content: center;
     margin-top: 20px;
 }
 
@@ -79,30 +53,113 @@ body {
     overflow: hidden;
 }
 
-.image-wrapper {
+.background-image {
     position: absolute;
-    cursor: move;
-    border-radius: 5px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.image-wrapper img {
-    display: block;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.crop-window {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: transparent;
+    border: 2px solid #fff;
+    cursor: move;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    z-index: 1;
 }
 
 .resize-handle {
     position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #007bff;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 2px solid #000;
     border-radius: 50%;
-    cursor: nwse-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.resize-handle.top-left { top: -6px; left: -6px; }
-.resize-handle.top-right { top: -6px; right: -6px; }
-.resize-handle.bottom-left { bottom: -6px; left: -6px; }
-.resize-handle.bottom-right { bottom: -6px; right: -6px; }
+.point-number {
+    color: black;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.crop-window {
+    position: absolute;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+    cursor: move;
+}
+
+.resize-point {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border: 1px solid #000;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Corner points */
+.top-left { left: 0; top: 0; }
+.top-right { right: 0; top: 0; transform: translate(50%, -50%); }
+.bottom-right { right: 0; bottom: 0; transform: translate(50%, 50%); }
+.bottom-left { left: 0; bottom: 0; transform: translate(-50%, 50%); }
+
+/* Edge point containers */
+.top-edge-points {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+}
+
+.bottom-edge-points {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+}
+
+.left-edge-points {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+}
+
+.right-edge-points {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+}
+
+.top-left { transform: translate(-50%, -50%); left: 0; top: 0; }
+.top-right { transform: translate(50%, -50%); right: 0; top: 0; }
+.bottom-left { transform: translate(-50%, 50%); left: 0; bottom: 0; }
+.bottom-right { transform: translate(50%, 50%); right: 0; bottom: 0; }

@@ -1,142 +1,178 @@
 const upload = document.getElementById('upload');
 const box1 = document.getElementById('box1');
-const box2 = document.getElementById('box2');
+const backgroundImage = box1.querySelector('.background-image');
 
-// Add input for multiple images
-const multipleUpload = document.createElement('input');
-multipleUpload.type = 'file';
-multipleUpload.multiple = true;
-multipleUpload.id = 'multipleUpload';
-box2.parentElement.insertBefore(multipleUpload, box2);
-
-const createImageWrapper = (readerResult) => {
-  const imgWrapper = document.createElement('div');
-  imgWrapper.classList.add('image-wrapper');
-  imgWrapper.innerHTML = `
-    <img src="${readerResult}" alt="Uploaded">
-    <div class="delete-button">×</div>
-    <div class="resize-handle top-left"></div>
-    <div class="resize-handle top-right"></div>
-    <div class="resize-handle bottom-left"></div>
-    <div class="resize-handle bottom-right"></div>
-  `;
-  
-  // Add delete functionality
-  const deleteButton = imgWrapper.querySelector('.delete-button');
-  deleteButton.addEventListener('click', () => {
-    imgWrapper.remove();
-  });
-  
-  return imgWrapper;
-};
-
-function enableDragAndResize(imgWrapper, box) {
-  let isDragging = false, startX, startY, offsetX, offsetY, isResizing = false, initialWidth, initialHeight;
-
-  imgWrapper.addEventListener('mousedown', (e) => {
-    if (e.target.classList.contains('resize-handle')) {
-      isResizing = true;
-      initialWidth = imgWrapper.offsetWidth;
-      initialHeight = imgWrapper.offsetHeight;
-      startX = e.clientX;
-      startY = e.clientY;
-    } else if (!e.target.classList.contains('delete-button')) {
-      isDragging = true;
-      offsetX = e.offsetX;
-      offsetY = e.offsetY;
-      startX = e.clientX;
-      startY = e.clientY;
-    }
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      const boxRect = box.getBoundingClientRect();
-      const newX = e.clientX - boxRect.left - offsetX;
-      const newY = e.clientY - boxRect.top - offsetY;
-      
-      imgWrapper.style.left = `${newX}px`;
-      imgWrapper.style.top = `${newY}px`;
-    }
-
-    if (isResizing) {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const newWidth = initialWidth + dx;
-      const newHeight = initialHeight + dy;
-      
-      imgWrapper.style.width = `${newWidth}px`;
-      imgWrapper.style.height = `${newHeight}px`;
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-    isResizing = false;
-  });
+function createPoint() {
+    const point = document.createElement('div');
+    point.classList.add('resize-point');
+    return point;
 }
 
-// Single image upload handler
+function createCropWindow() {
+    const cropWindow = document.createElement('div');
+    cropWindow.classList.add('crop-window');
+    
+    // Create corner points
+    const corners = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
+    corners.forEach(position => {
+        const point = createPoint();
+        point.classList.add(position);
+        cropWindow.appendChild(point);
+    });
+    
+    // Create containers for edge points
+    const edges = ['top', 'right', 'bottom', 'left'];
+    edges.forEach(edge => {
+        const container = document.createElement('div');
+        container.classList.add(`${edge}-edge-points`);
+        cropWindow.appendChild(container);
+    });
+    
+    return cropWindow;
+}
+
+function updateEdgePoints(cropWindow) {
+    const width = cropWindow.offsetWidth;
+    const height = cropWindow.offsetHeight;
+    const threshold = 100; // Distance threshold for adding new points
+    
+    // Update top and bottom edge points
+    ['top', 'bottom'].forEach(edge => {
+        const container = cropWindow.querySelector(`.${edge}-edge-points`);
+        const numPoints = Math.floor(width / threshold) - 1;
+        
+        // Remove existing points
+        container.innerHTML = '';
+        
+        // Add new points
+        for (let i = 1; i <= numPoints; i++) {
+            const point = createPoint();
+            const position = (i * threshold) / width * 100;
+            point.style.left = `${position}%`;
+            container.appendChild(point);
+        }
+    });
+    
+    // Update left and right edge points
+    ['left', 'right'].forEach(edge => {
+        const container = cropWindow.querySelector(`.${edge}-edge-points`);
+        const numPoints = Math.floor(height / threshold) - 1;
+        
+        // Remove existing points
+        container.innerHTML = '';
+        
+        // Add new points
+        for (let i = 1; i <= numPoints; i++) {
+            const point = createPoint();
+            const position = (i * threshold) / height * 100;
+            point.style.top = `${position}%`;
+            container.appendChild(point);
+        }
+    });
+}
+
+function enableDragAndResize(cropWindow, box) {
+    let isDragging = false, startX, startY, offsetX, offsetY, isResizing = false, initialWidth, initialHeight;
+
+    cropWindow.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('resize-point')) {
+            if (e.target.classList.contains('top-left') || 
+                e.target.classList.contains('top-right') || 
+                e.target.classList.contains('bottom-left') || 
+                e.target.classList.contains('bottom-right')) {
+                isResizing = true;
+                initialWidth = cropWindow.offsetWidth;
+                initialHeight = cropWindow.offsetHeight;
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+        } else {
+            isDragging = true;
+            offsetX = e.offsetX;
+            offsetY = e.offsetY;
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const boxRect = box.getBoundingClientRect();
+            let newX = e.clientX - boxRect.left - offsetX;
+            let newY = e.clientY - boxRect.top - offsetY;
+            
+            // Constrain movement within box boundaries
+            newX = Math.max(0, Math.min(newX, box.offsetWidth - cropWindow.offsetWidth));
+            newY = Math.max(0, Math.min(newY, box.offsetHeight - cropWindow.offsetHeight));
+            
+            cropWindow.style.left = `${newX}px`;
+            cropWindow.style.top = `${newY}px`;
+        }
+
+        if (isResizing) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            // Calculate new dimensions
+            let newWidth = initialWidth + dx;
+            let newHeight = initialHeight + dy;
+            
+            // Apply minimum size constraint
+            const minSize = 50;
+            newWidth = Math.max(minSize, newWidth);
+            newHeight = Math.max(minSize, newHeight);
+            
+            // Constrain resize within box boundaries
+            const maxWidth = box.offsetWidth - cropWindow.offsetLeft;
+            const maxHeight = box.offsetHeight - cropWindow.offsetTop;
+            newWidth = Math.min(newWidth, maxWidth);
+            newHeight = Math.min(newHeight, maxHeight);
+            
+            cropWindow.style.width = `${newWidth}px`;
+            cropWindow.style.height = `${newHeight}px`;
+            
+            // Update edge points
+            updateEdgePoints(cropWindow);
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        isResizing = false;
+    });
+}
+
 upload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const imgWrapper = createImageWrapper(reader.result);
-    box1.innerHTML = '';
-    box1.appendChild(imgWrapper);
-
-    const img = new Image();
-    img.onload = () => {
-      const aspectRatio = img.width / img.height;
-      let defaultWidth, defaultHeight;
-      if (aspectRatio > 1) {
-        defaultWidth = 200;
-        defaultHeight = 200 / aspectRatio;
-      } else {
-        defaultHeight = 200;
-        defaultWidth = 200 * aspectRatio;
-      }
-
-      imgWrapper.style.width = `${defaultWidth}px`;
-      imgWrapper.style.height = `${defaultHeight}px`;
-      imgWrapper.querySelector('img').style.width = '100%';
-      imgWrapper.querySelector('img').style.height = '100%';
-    };
-    img.src = reader.result;
-
-    enableDragAndResize(imgWrapper, box1);
-  };
-  reader.readAsDataURL(file);
-});
-
-// Multiple image upload handler
-multipleUpload.addEventListener('change', (e) => {
-  const files = Array.from(e.target.files);
-  let xOffset = 10;
-
-  files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const imgWrapper = createImageWrapper(reader.result);
-
-      imgWrapper.style.width = '200px';
-      imgWrapper.style.height = '200px';
-      imgWrapper.style.left = `${xOffset}px`;
-      imgWrapper.style.top = '10px';
-      
-      xOffset += 210;
-
-      box2.appendChild(imgWrapper);
-
-      const img = imgWrapper.querySelector('img');
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.objectFit = 'cover';
-
-      enableDragAndResize(imgWrapper, box2);
+        // Set background image
+        backgroundImage.style.backgroundImage = `url(${reader.result})`;
+        
+        // Clear existing crop window if any
+        const existingCropWindow = box1.querySelector('.crop-window');
+        if (existingCropWindow) {
+            existingCropWindow.remove();
+        }
+        
+        // Create and add new crop window
+        const cropWindow = createCropWindow();
+        box1.appendChild(cropWindow);
+        
+        // Set initial size and position
+        cropWindow.style.width = '200px';
+        cropWindow.style.height = '200px';
+        cropWindow.style.left = `${(box1.offsetWidth - 200) / 2}px`;
+        cropWindow.style.top = `${(box1.offsetHeight - 200) / 2}px`;
+        
+        // Initialize edge points
+        updateEdgePoints(cropWindow);
+        
+        // Enable drag and resize functionality
+        enableDragAndResize(cropWindow, box1);
     };
     reader.readAsDataURL(file);
-  });
 });
